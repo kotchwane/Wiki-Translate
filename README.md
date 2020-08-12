@@ -1,24 +1,37 @@
 # Wiki-Translate: a Translation Dictionary in Emacs, using Wikipedia
 
-Do you ever look for the translation of a word by looking it up on Wikipedia,  then clicking on "Languages" and hovering on the language you're interested in to see the translation?
+Do you ever look for the translation of a word by looking it up on Wikipedia, then clicking on "Languages" and hovering on the language you're interested in to see the translation?
 
 ![Screenshot](img/demo1.png)
 
 This snippet of code automates it for you, inside Emacs.
 
-Just specify the languages you're interested in (variable `wt-languages`), using the [ISO 639-1 codes](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) (generally two letters : `en` for english, `pt` for portuguese, etc.), provided that the Wikipedia in this language exists and is known under this name (which is generally the case, but have a check on the [List Of Wikipedias](https://en.wikipedia.org/wiki/List_of_Wikipedias).  
-For each language pair, the code automatically creates a function to translate from and to this language. For instance, if you specify english (en), german (de) and russian (ru), it creates the functions `en-de`, `en-ru`, `de-en`,`de-ru`, `ru-en`, and `ru-de`. By default, the created functions are prefixed with `wt-` to comply with [Emacs Lisp Coding Conventions](https://www.gnu.org/software/emacs/manual/html_node/elisp/Coding-Conventions.html#Coding-Conventions), which means the functions are available through `wt-en-de`, `wt-en-ru` and so on: but, if it doesn't mess with your other packages, I recommend setting this prefix to the empty string, for a more direct access.
+It creates a user-defined set of functions like `en-fr`, which translates from English to French, or `de-pt`, which translates from German to Portuguese.
+
+By default, a prefix is put before these functions, to comply with [Emacs Lisp Coding Conventions](https://www.gnu.org/software/emacs/manual/html_node/elisp/Coding-Conventions.html#Coding-Conventions), so they are accessible through `wt-en-de`, `wt-en-ru` and so on: but I recommend setting this prefix (`wt-prefix`) to nil if you can, for a more direct access.
 
 Calling the functions with C-u opens the Wikipedia page of the translation.
 
 Autocompletion is available (I recommand helm).
 
 
-## Behaviour and example usage
+## Example usage
 
-- How do you say *rabbit* in french ? `M-x` `en-fr` `rabbit` gives you the answer. (`wt-en-fr` if you did not set `wt-prefix` to "").
+- How do you say *rabbit* in French ? `M-x` `en-fr` `rabbit` gives you the answer. (`wt-en-fr` if you did not set `wt-prefix` to nil).
 - `M-x` `en-eo` `Russia` looks for the translation of *Russia* in Esperanto and displays the result (*Rusio*) in the minibuffer.
 - `C-u` `M-x` `pt-ja` `Coimbra` looks for the japanese translation of the portuguese name *Coimbra*, displays it in the minibuffer, and opens the [japanese page](https://ja.wikipedia.org/wiki/%E3%82%B3%E3%82%A4%E3%83%B3%E3%83%96%E3%83%A9) dedicated to it.
+
+## Customization
+
+Reload wiki-translate.el (or Emacs) for modifications to take effect.
+
+I suggest setting `wt-prefix` to nil, to be able to access the functions directly through their two-letter codes (`es-en`), without having to type in the prefix (`wt-es-en`).
+
+Default languages are English (en), Esperanto (eo), French (fr), German (de), Japanese (ja), Mandarin Chinese (zh), Portuguese (pt).  
+You can add or remove any language you want through the variable `wt-languages`. It uses the [ISO 639-1 code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) of the languages (generally two letters : `en` for english, `pt` for portuguese, etc.), provided that the Wikipedia in this language exists and is known under this name (which is generally the case, but have a check at the [List Of Wikipedias](https://en.wikipedia.org/wiki/List_of_Wikipedias)) if in doubt).  
+
+For each language pair, the code automatically creates a function to translate from and to this language. For instance, if you specify English (en), German (de) and Russian (ru), it creates the functions `en-de`, `en-ru`, `de-en`,`de-ru`, `ru-en`, and `ru-de`. 
+
 
 
 ## How does it work?
