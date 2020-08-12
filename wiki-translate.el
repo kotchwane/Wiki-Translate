@@ -1,7 +1,11 @@
-;; wiki-translate
+;; wt-translate
 
 
-(defcustom wiki-translate-input-idle-delay 0.6
+(defcustom wt-prefix "wt-"
+  "Prefix to use before the automatically generated functions of the type `fr-en`. Can be an empty string."
+  :type 'string)
+
+(defcustom wt-input-idle-delay 0.6
   "`helm-input-idle-delay' used for wiki-translate."
   :type 'float)
 
@@ -14,7 +18,7 @@
 ;; (defun test()
 ;;   (interactive)
 ;;   (completing-read "Type a word."
-;; 		   (completion-table-dynamic #'(lambda (x) (wiki-translate-basic-search x "fr")))
+;; 		   (completion-table-dynamic #'(lambda (x) (wt-basic-search x "fr")))
 ;; 		   nil t))
 
 
@@ -27,17 +31,18 @@
 
 
 ;; CUSTOMIZE THIS VARIABLE ACCORDING TO YOUR NEEDS, AND THEN RELOAD THIS FILE (M-x load-file <RET><RET>)
-(defcustom wiki-translate-languages '("en" "fr" "pt" "eo" "ja" "zh" "de")
+;; Use the Wikipedia code (generally defined by ISO 639-1, but there are some exceptions, see https://en.wikipedia.org/wiki/List_of_Wikipedias) 
+(defcustom wt-languages '("en" "fr" "pt" "eo" "ja" "zh" "de")
   "Languages for which a translation function will be created with format style: fr-en"
   )
 ;; END OF CUSTOMIZATION
 
-(defun make-api-request (ws-url)
-  (with-temp-buffer
-    (url-insert-file-contents ws-url)
-    (buffer-string)))
+;; (defun make-api-request (ws-url)
+;;   (with-temp-buffer
+;;     (url-insert-file-contents ws-url)
+;;     (buffer-string)))
 
-(defun get-ws-json (ws-url)
+(defun wt-get-ws-json (ws-url)
   "Calls the JSON WS <ws-url>.
 Returns asynchronously the JSON as a hash-table."
   (require 'json)
@@ -49,13 +54,13 @@ Returns asynchronously the JSON as a hash-table."
       (let ((json-false :false))
 	    (json-read)))))
 
-;; (pp (get-ws-json "https://www.mediawiki.org/w/api.php?action=query&list=allpages&apfrom=B&format=json"))
+;; (pp (wt-get-ws-json "https://www.mediawiki.org/w/api.php?action=query&list=allpages&apfrom=B&format=json"))
 
 
 
-(defun wiki-translate (word lang-from lang-to)
+(defun wt-translate (word lang-from lang-to)
   "Translates word from lang-from to lang-to using Wikipedia APIs.
-Example usage: (wiki-translate \"Banana\" \"en\" \"ja\")."
+Example usage: (wt-translate \"Banana\" \"en\" \"ja\")."
   ;; url API usage: https://fr.wikipedia.org/w/api.php?action=query&prop=langlinks&titles=V%C3%A9rone&lllang=en&formatversion=2&redirects&format=json
   (let* (
 	 (url (concat "https://"
@@ -65,7 +70,7 @@ Example usage: (wiki-translate \"Banana\" \"en\" \"ja\")."
 		      "&lllang="
 		      lang-to
 		      "&formatversion=2&redirects&format=json"))
-	 (wikipedia-JSON (get-ws-json url))
+	 (wikipedia-JSON (wt-get-ws-json url))
 	 ;; query.pages[0].langlinks, if it exists, contains the translation: query.pages[0].langlinks[0].title
 	 (query (gethash "query" wikipedia-JSON))
 	 (pages (gethash "pages" query))
@@ -81,16 +86,16 @@ Example usage: (wiki-translate \"Banana\" \"en\" \"ja\")."
 ;; (browse-url (concat "https://eo.wikipedia.org/wiki/" (url-hexify-string "Unuiĝintaj Nacioj")))
 
 
-(defun generic-interactive-wiki-translate (lang-from lang-to)
+(defun wt-generic-interactive-translate (lang-from lang-to)
   "Model of the functions fr-eo and so on"
   (let* ((debug-on-error t)
-	 (helm-input-idle-delay wiki-translate-input-idle-delay)
+	 (helm-input-idle-delay wt-input-idle-delay)
 	 (completion-ignore-case t)
 	 (word 
 	  (completing-read (format "Type a word in %s: " lang-from)
-			   (completion-table-dynamic #'(lambda (x) (wiki-translate-advanced-search x lang-from)))
+			   (completion-table-dynamic #'(lambda (x) (wt-advanced-search x lang-from)))
 			   nil t))
-	 (translation (wiki-translate word lang-from lang-to)))
+	 (translation (wt-translate word lang-from lang-to)))
     (if (not translation)
 	(message (concat word "'s translation could not be found."))
       (progn
@@ -99,18 +104,18 @@ Example usage: (wiki-translate \"Banana\" \"en\" \"ja\")."
 	(message translation)))))
 
 
-;; Defining the functions en-fr, en-pt, eo-fr, etc.
-(dolist (lang-from wiki-translate-languages)
-  (dolist (lang-to wiki-translate-languages)
+;; Defining the functions <wt-prefix>en-fr, <wt-prefix>en-pt, eo-fr, etc.
+(dolist (lang-from wt-languages)
+  (dolist (lang-to wt-languages)
     (if (not (string= lang-from lang-to))
-	(defalias (intern (concat lang-from "-" lang-to))
+	(defalias (intern (concat wt-prefix lang-from "-" lang-to))
 	  `(lambda(), (format "Translate from %s to %s using Wikipedia APIs." lang-from lang-to)
 	     (interactive)
-	       (generic-interactive-wiki-translate ,lang-from ,lang-to))))))
+	       (wt-generic-interactive-translate ,lang-from ,lang-to))))))
 
 
 
-(defun wiki-translate-basic-search (prefix lang)
+(defun wt-basic-search (prefix lang)
   ;; Uses Wikipedia "query" API:
   ;; Example url: https://en.wikipedia.org/w/api.php?action=query&list=allpages&apprefix=donald tr&formatversion=2&aplimit=15&format=json
   (let* ((url (concat "https://" lang ".wikipedia.org/w/api.php?"
@@ -120,7 +125,7 @@ Example usage: (wiki-translate \"Banana\" \"en\" \"ja\")."
 		      "&formatversion=2"
 		      "&aplimit=15"
 		      "&format=json"))
-	 (json (get-ws-json url))
+	 (json (wt-get-ws-json url))
 	 (query (gethash "query" json))
 	 (all-categories (gethash "allpages" query))
 	 )
@@ -131,7 +136,7 @@ Example usage: (wiki-translate \"Banana\" \"en\" \"ja\")."
 
 
 
-(defun wiki-translate-advanced-search (query lang)
+(defun wt-advanced-search (query lang)
   ;; uses Wikipedia "opensearch" API. (&format=json is useful when query is empty)
   ;; https://fr.wikipedia.org/w/api.php?action=opensearch&search=Ivan%C2%A0Ill&format=json
   ;; Result: a list L containing in L[1] all possible names.
@@ -143,7 +148,7 @@ Example usage: (wiki-translate \"Banana\" \"en\" \"ja\")."
 		      "&search="
 		      query
 		      "&format=json"))
-	 (json (get-ws-json url)))
+	 (json (wt-get-ws-json url)))
 	 (nth 1 json)))
 
 
